@@ -1,0 +1,46 @@
+name: Qullamaggie Daily Scanner
+
+on:
+  schedule:
+    # 台灣/香港時間每天早上 07:30 自動執行
+    - cron: '30 23 * * *'
+  workflow_dispatch: # 允許手動點擊執行
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  run-scanner:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: 檢查程式碼
+      uses: actions/checkout@v4
+
+    - name: 設定 Python 環境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 安裝必要套件
+      run: |
+        pip install -r requirements.txt
+
+    - name: 執行 Qullamaggie 強勢股篩選
+      run: |
+        python scan.py
+
+    - name: 自動將結果存回 GitHub 專案
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if ls Qullamaggie_Top50_*.txt 1> /dev/null 2>&1; then
+          git add Qullamaggie_Top50_*.txt
+          git commit -m "更新今日 Qullamaggie Top 50 清單"
+          git push
+        else
+          echo "今日未偵測到符合條件的股票，跳過上傳。"
+        fi
