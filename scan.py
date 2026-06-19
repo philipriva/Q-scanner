@@ -172,14 +172,10 @@ if __name__ == "__main__":
 
         df_top50 = df_final.sort_values(by="Blended_Rank").head(50)
 
-        # 💡 將結果美化並直接寫入文字檔中！起床後可以直接看精美表格
+        # 💡 核心修正：直接寫入一行一個 Ticker
         with open(FILE_NAME, "w", encoding="utf-8") as f:
-            f.write(f"📊 QULLAMAGGIE 系統：全美股強勢動能精選 Top 50 ({datetime.datetime.now().strftime('%Y-%m-%d')})\n")
-            f.write("=" * 80 + "\n")
-            f.write(df_top50[["Ticker", "Price", "Dist_High_%", "ADR_%", "Mom_1M", "Mom_3M"]].to_string(index=False))
-            f.write("\n\n💬 TRADINGVIEW 批量導入 (逗號分隔) 💬\n")
-            f.write("=" * 80 + "\n")
-            f.write(",".join(df_top50["Ticker"].tolist()) + "\n")
-        print(f"📁 成功生成精選報告: {FILE_NAME}")
+            for ticker in df_top50["Ticker"]:
+                f.write(f"{ticker}\n")
+        print(f"📁 成功生成純文字代碼清單: {FILE_NAME}")
     else:
         print("\n❌ 今日未發現符合標準的股票。")
