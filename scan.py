@@ -8,19 +8,19 @@ import requests
 import yfinance as yf
 
 # --- 🎯 Qullamaggie 進階策略參數 ---
-MIN_PRICE = 5.0  
-PROXIMITY_TO_HIGH = 0.10  
-ADR_MULTIPLIER = 4.5  
-RELEVANT_YEARS = 5  
+MIN_PRICE = 5.0  # 最低股價
+# 💡 移除原本固定的 PROXIMITY_TO_HIGH = 0.10，改由動能判斷中即時計算 3 倍 ADR
+ADR_MULTIPLIER = 4.5  # 歷史高點距離限制係數
+RELEVANT_YEARS = 5  # 歷史高點參考年限
 
 # 🔥 進階核心濾網：
-MIN_ADR = 4.0  
-MIN_DOLLAR_VOLUME = 5000000  
-MIN_MOM_3M = 1.15  
-CHUNK_SIZE = 100             # 每次群組下載 100 隻股票
+MIN_ADR = 4.0  # 進階：ADR 必須大於 4% (過濾慢速股，只要猛獸)
+MIN_DOLLAR_VOLUME = 5000000  # 進階：日均成交金額提升至 500 萬美元 (確保機構參與)
+MIN_MOM_3M = 1.15  # 進階：股價必須高於 66MA 至少 15% 以上 (確保有爆發性前置趨勢)
+CHUNK_SIZE = 100  # 每次群組下載 100 隻股票
 
-# 輸出結果檔名
-FILE_NAME = f"Qullamaggie_Top50_{datetime.datetime.now().strftime('%Y%m%d')}.txt"
+# 輸出結果檔名 (對齊 V3 命名模式)
+FILE_NAME = f"Strong_Stocks_V3_{datetime.datetime.now().strftime('%Y%m%d')}.txt"
 
 def is_internet_up():
     try:
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     ticker_chunks = list(chunk_list(all_tickers, CHUNK_SIZE))
     
     successful_scans = []
-    print(f"🚀 開始高效雙重掃描，總共分為 {len(ticker_chunks)} 組執行...")
+    print(f"🚀 開始高效批次掃描，總共分為 {len(ticker_chunks)} 組執行...")
     
     for i, chunk in enumerate(ticker_chunks):
         wait_for_internet()
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                         continue
                     hist_5y = batch_data[symbol]
                 
-                # 🔥 關鍵修復：強力濾除包含 NaN 的無效行
+                # 濾除包含 NaN 的無效數據
                 hist_5y = hist_5y.dropna(subset=['Close', 'High', 'Low', 'Volume'])
                 
                 if len(hist_5y) < 200:
@@ -108,17 +108,26 @@ if __name__ == "__main__":
                 if current_price < ema_200 or ema_50 < ema_200:
                     continue
 
-                # 2. 52 週新高檢查
-                year_high = hist_2y["Close"].tail(252).max()
-                if (year_high - current_price) / year_high > PROXIMITY_TO_HIGH:
-                    continue
-
-                # 3. 流動性過濾 (提升至 500 萬美元)
+                # 計算流動性 (日均成交量金額)
                 avg_vol = hist_2y["Volume"].iloc[-20:].mean()
                 if current_price * avg_vol < MIN_DOLLAR_VOLUME:
                     continue
 
-                # 4. 計算動能並進行爆發性過濾
+                # 計算 20 天 ADR 百分比
+                daily_range_pct = (hist_5y["High"] - hist_5y["Low"]) / hist_5y["Low"]
+                adr_pct = daily_range_pct.tail(20).mean() * 100
+
+                # 濾網：過濾慢速股
+                if adr_pct < MIN_ADR:
+                    continue
+
+                # 💡 修改點一：52 週新高檢查改為「距離在 3 倍 ADR 以內」
+                year_high = hist_2y["Close"].tail(252).max()
+                dist_to_year_high_pct = ((year_high - current_price) / year_high) * 100
+                if dist_to_year_high_pct > (adr_pct * 3):
+                    continue
+
+                # 計算趨勢動能
                 avg_25 = hist_2y["Close"].rolling(window=25).mean().iloc[-1]
                 avg_66 = hist_2y["Close"].rolling(window=66).mean().iloc[-1]
                 avg_126 = hist_2y["Close"].rolling(window=126).mean().iloc[-1]
@@ -127,22 +136,17 @@ if __name__ == "__main__":
                 mom_3m = current_price / avg_66
                 mom_6m = current_price / avg_126
 
+                # 濾網：爆發性趨勢過濾
                 if mom_3m < MIN_MOM_3M:
                     continue
 
-                # 5. ATH 與 ADR 篩選
+                # 歷史高點 ATH 限制檢查
                 relevant_ath = hist_5y["Close"].max()
-                daily_range_pct = (hist_5y["High"] - hist_5y["Low"]) / hist_5y["Low"]
-                adr_pct = daily_range_pct.tail(20).mean() * 100
-
-                if adr_pct < MIN_ADR:
-                    continue
-
                 dist_to_ath = (relevant_ath - current_price) / relevant_ath
                 if dist_to_ath > (adr_pct * ADR_MULTIPLIER) / 100:
                     continue
 
-                # 打包黃金數據
+                # 通過篩選，記錄數據
                 stock_data = {
                     "Ticker": symbol,
                     "Price": round(current_price, 2),
@@ -153,7 +157,7 @@ if __name__ == "__main__":
                     "Mom_6M": round(mom_6m, 3),
                 }
                 successful_scans.append(stock_data)
-                print(f"🔥 [通過篩選] {symbol} | 現價: {current_price:.2f} | ADR: {adr_pct:.1f}%")
+                print(f"🔥 [符合條件] {symbol} | 現價: {current_price:.2f} | ADR: {adr_pct:.1f}% | 距離高點: {dist_to_year_high_pct:.1f}%")
                     
             except Exception:
                 pass
@@ -165,17 +169,22 @@ if __name__ == "__main__":
 
     if successful_scans:
         df_final = pd.DataFrame(successful_scans)
+
+        # 計算綜合排名分數（為了幫你在檔案中從最強排到最弱）
         df_final["Rank_1M"] = df_final["Mom_1M"].rank(ascending=False)
         df_final["Rank_3M"] = df_final["Mom_3M"].rank(ascending=False)
         df_final["Rank_6M"] = df_final["Mom_6M"].rank(ascending=False)
         df_final["Blended_Rank"] = (df_final["Rank_1M"] + df_final["Rank_3M"] + df_final["Rank_6M"]) / 3
 
-        df_top50 = df_final.sort_values(by="Blended_Rank").head(50)
+        # 💡 修改點二：移除 .head(50) 限制！保留「所有」通過篩選的強勢股
+        df_sorted = df_final.sort_values(by="Blended_Rank")
 
-        # 💡 核心修正：直接寫入一行一個 Ticker
+        print(f"\n📊 偵測完畢：今日共有 {len(df_sorted)} 支股票符合所有篩選標準。")
+
+        # 💡 精確輸出：以覆寫模式（"w"）將所有符合的股票「一行一個 Ticker」乾淨寫入檔案
         with open(FILE_NAME, "w", encoding="utf-8") as f:
-            for ticker in df_top50["Ticker"]:
+            for ticker in df_sorted["Ticker"]:
                 f.write(f"{ticker}\n")
-        print(f"📁 成功生成純文字代碼清單: {FILE_NAME}")
+        print(f"📁 乾淨代碼清單已寫入: {FILE_NAME}")
     else:
         print("\n❌ 今日未發現符合標準的股票。")
