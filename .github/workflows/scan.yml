@@ -37,10 +37,10 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
-        # 💡 關鍵修正：改成 V3 檔名，這樣才對得起 scan.py 的輸出！
-        if ls Strong_Stocks_V3_*.txt 1> /dev/null 2>&1; then
-          git add Strong_Stocks_V3_*.txt
-          git commit -m "更新今日 Qullamaggie 強勢股清單"
+        # 💡 關鍵修正：同步改為檢查並上傳 Maggiestocks_ 開頭的檔案！
+        if ls Maggiestocks_*.txt 1> /dev/null 2>&1; then
+          git add Maggiestocks_*.txt
+          git commit -m "更新今日 Qullamaggie 強勢股清單 (Maggiestocks 版)"
           git push
         else
           echo "今日未偵測到符合條件的股票，跳過上傳。"
