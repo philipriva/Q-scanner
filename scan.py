@@ -9,17 +9,16 @@ import yfinance as yf
 
 # --- 🎯 Qullamaggie 進階策略參數 ---
 MIN_PRICE = 5.0  # 最低股價
-# 💡 移除原本固定的 PROXIMITY_TO_HIGH = 0.10，改由動能判斷中即時計算 3 倍 ADR
 ADR_MULTIPLIER = 4.5  # 歷史高點距離限制係數
 RELEVANT_YEARS = 5  # 歷史高點參考年限
 
 # 🔥 進階核心濾網：
-MIN_ADR = 4.0  # 進階：ADR 必須大於 4% (過濾慢速股，只要猛獸)
-MIN_DOLLAR_VOLUME = 5000000  # 進階：日均成交金額提升至 500 萬美元 (確保機構參與)
-MIN_MOM_3M = 1.15  # 進階：股價必須高於 66MA 至少 15% 以上 (確保有爆發性前置趨勢)
+MIN_ADR = 4.0  # 進階：ADR 必須大於 4%
+MIN_DOLLAR_VOLUME = 5000000  # 進階：日均成交金額金額提升至 500 萬美元
+MIN_MOM_3M = 1.15  # 進階：股價必須高於 66MA 至少 15% 以上
 CHUNK_SIZE = 100  # 每次群組下載 100 隻股票
 
-# 💡 輸出結果檔名：已依要求修改為 Maggiestocks_ 開頭
+# 💡 輸出結果檔名
 FILE_NAME = f"Maggiestocks_{datetime.datetime.now().strftime('%Y%m%d')}.txt"
 
 def is_internet_up():
@@ -78,7 +77,7 @@ if __name__ == "__main__":
                 progress=False,
                 threads=True
             )
-        except Exception as e:
+        except Exception:
             continue
 
         for symbol in chunk:
@@ -170,21 +169,32 @@ if __name__ == "__main__":
     if successful_scans:
         df_final = pd.DataFrame(successful_scans)
 
-        # 計算綜合排名分數（從最強排到最弱）
+        # 計算綜合排名分數
         df_final["Rank_1M"] = df_final["Mom_1M"].rank(ascending=False)
         df_final["Rank_3M"] = df_final["Mom_3M"].rank(ascending=False)
         df_final["Rank_6M"] = df_final["Mom_6M"].rank(ascending=False)
         df_final["Blended_Rank"] = (df_final["Rank_1M"] + df_final["Rank_3M"] + df_final["Rank_6M"]) / 3
 
-        # 保留「所有」通過篩選的強勢股
         df_sorted = df_final.sort_values(by="Blended_Rank")
 
         print(f"\n📊 偵測完畢：今日共有 {len(df_sorted)} 支股票符合所有篩選標準。")
 
-        # 以覆寫模式將所有符合的股票「一行一個 Ticker」寫入檔案
+        # 寫入檔案
         with open(FILE_NAME, "w", encoding="utf-8") as f:
             for ticker in df_sorted["Ticker"]:
                 f.write(f"{ticker}\n")
         print(f"📁 乾淨代碼清單已寫入: {FILE_NAME}")
     else:
         print("\n❌ 今日未發現符合標準的股票。")
+
+    # --- 🧹 自動清理 5 天前的舊 Maggiestocks 檔案 ---
+    print("\n🧹 開始檢查並清理過期檔案...")
+    now = time.time()
+    cutoff = now - (5 * 86400)  # 5 天的秒數
+
+    for file in os.listdir("."):
+        if file.startswith("Maggiestocks_") and file.endswith(".txt"):
+            file_path = os.path.join(".", file)
+            if os.path.getmtime(file_path) < cutoff:
+                os.remove(file_path)
+                print(f"🗑️ 已自動刪除 5 天前的舊檔案: {file}")
