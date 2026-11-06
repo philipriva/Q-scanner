@@ -1,0 +1,24 @@
+name: Unit tests (offline)
+
+on:
+  pull_request:
+  push:
+    branches: [main, "fix/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q .
+      - run: python -m unittest discover -s tests -v

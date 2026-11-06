@@ -1,3 +1,4 @@
 yfinance
 pandas
 requests
+exchange_calendars>=4.5
