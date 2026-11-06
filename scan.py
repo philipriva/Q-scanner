@@ -45,12 +45,27 @@ def wait_for_internet() -> None:
         print("✅ 網路已恢復，繼續掃描...\n")
 
 
+def validate_nasdaq_payload(text: str) -> None:
+    """Fail closed unless the payload is a complete nasdaqtraded.txt (header + footer)."""
+    lines = text.strip().splitlines()
+    if len(lines) < 2:
+        raise ValueError("nasdaqtraded.txt empty")
+    header = lines[0].split("|")
+    for col in ("Symbol", "Test Issue", "ETF"):
+        if col not in header:
+            raise ValueError(f"nasdaqtraded.txt missing column {col}")
+    if not lines[-1].startswith("File Creation Time"):
+        raise ValueError("nasdaqtraded.txt truncated (no File Creation Time footer)")
+
+
 def get_nasdaq_list() -> list[str]:
     print("📋 正在獲取官方精確市場名單...")
     try:
         url = "http://www.nasdaqtrader.com/dynamic/SymDir/nasdaqtraded.txt"
         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
-        df = pd.read_csv(io.StringIO(response.text), sep="|")
+        response.raise_for_status()
+        validate_nasdaq_payload(response.text)
+        df = pd.read_csv(io.StringIO(response.text), sep="|", dtype=str, keep_default_na=False, na_values=[])  # keep real tickers NA/NAN
         df = df[df["Test Issue"] == "N"]
         df = df[df["ETF"] == "N"]
         df = df.dropna(subset=["Symbol"])
@@ -60,7 +75,7 @@ def get_nasdaq_list() -> list[str]:
         return list(set(clean))
     except Exception as e:
         print(f"⚠️ 官方清單獲取失敗: {e}")
-        return ["AAPL", "MSFT", "NVDA", "AMD"]
+        raise RuntimeError(f"NASDAQ_LIST_UNAVAILABLE: refuse to scan a substitute universe: {e}") from e
 
 
 def usable_last_bar(hist):
