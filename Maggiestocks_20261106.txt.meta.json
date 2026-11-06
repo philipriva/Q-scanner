@@ -5,7 +5,7 @@
   "target_session": "2026-11-05",
   "publish_file_date": "2026-11-06",
   "list_file": "Maggiestocks_20261106.txt",
-  "produced_at_utc": "2026-11-06T04:48:10Z",
+  "produced_at_utc": "2026-11-06T05:03:46Z",
   "producer_version": "scan.py@meta-v1",
   "payload": {
     "count": 28,
@@ -15,8 +15,8 @@
       "XERS",
       "GMAB",
       "MRNA",
-      "DFIN",
       "VRDN",
+      "DFIN",
       "EVER",
       "RCEL",
       "KOD",
@@ -30,7 +30,7 @@
       "SEZL",
       "OSPN",
       "VSXY",
-      "NTSK"
+      "SEPN"
     ]
   },
   "universe": {
@@ -39,14 +39,14 @@
     "missing_count": 389,
     "bars_screened": 5639,
     "excluded_reasons": {
-      "ema_filter": 2293,
-      "price_filter": 1707,
-      "year_high_filter": 122,
-      "dollar_vol_filter": 517,
       "adr_filter": 822,
-      "too_few_bars": 389,
+      "dollar_vol_filter": 517,
+      "price_filter": 1707,
+      "ema_filter": 2293,
+      "mom_filter": 112,
       "ath_filter": 38,
-      "mom_filter": 112
+      "year_high_filter": 122,
+      "too_few_bars": 389
     }
   },
   "input_bars": {
@@ -54,7 +54,7 @@
     "fresh": 5638,
     "screened": 5639,
     "missing_count": 389,
-    "frac": 0.9353,
+    "frac": 0.9998,
     "denom": 6028,
     "min": "2026-11-04",
     "max": "2026-11-05",
@@ -73,8 +73,8 @@
       "XERS": "2026-11-05",
       "GMAB": "2026-11-05",
       "MRNA": "2026-11-05",
-      "DFIN": "2026-11-05",
       "VRDN": "2026-11-05",
+      "DFIN": "2026-11-05",
       "EVER": "2026-11-05",
       "RCEL": "2026-11-05",
       "KOD": "2026-11-05",
@@ -88,8 +88,8 @@
       "SEZL": "2026-11-05",
       "OSPN": "2026-11-05",
       "VSXY": "2026-11-05",
-      "NTSK": "2026-11-05",
       "SEPN": "2026-11-05",
+      "NTSK": "2026-11-05",
       "PRCH": "2026-11-05",
       "GCT": "2026-11-05",
       "HNGE": "2026-11-05",
