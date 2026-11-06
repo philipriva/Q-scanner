@@ -63,6 +63,16 @@ def get_nasdaq_list() -> list[str]:
         return ["AAPL", "MSFT", "NVDA", "AMD"]
 
 
+def usable_last_bar(hist):
+    """Session date of the last fully-populated OHLCV row, or None if no such row."""
+    if hist is None or len(hist) == 0:
+        return None
+    h = hist.dropna(subset=["Close", "High", "Low", "Volume"])
+    if len(h) == 0:
+        return None
+    return session_bar_date(h.index[-1])
+
+
 def chunk_list(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
@@ -136,12 +146,17 @@ def run_scan(tickers: list[str] | None = None) -> tuple[int, Path, Path, dict]:
                     hist_5y = batch_data[symbol]
 
                 hist_5y = hist_5y.dropna(subset=["Close", "High", "Low", "Volume"])
+                # Record the real last OHLCV bar BEFORE the lookback filter: a short-history
+                # ticker with a genuine target-session bar is fresh data, merely ineligible
+                # for signals. Empty / all-NaN frames record nothing (stay missing).
+                last_bar = usable_last_bar(hist_5y)
+                if last_bar is None:
+                    reasons["download_failed"] += 1
+                    continue
+                bar_dates_all.append(last_bar)
                 if len(hist_5y) < 200:
                     reasons["too_few_bars"] += 1
                     continue
-
-                last_bar = session_bar_date(hist_5y.index[-1])
-                bar_dates_all.append(last_bar)
 
                 hist_2y = hist_5y.tail(252 * 2)
                 current_price = float(hist_2y["Close"].iloc[-1])
