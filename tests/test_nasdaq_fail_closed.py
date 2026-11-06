@@ -46,3 +46,12 @@ class T(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NA(unittest.TestCase):
+    def test_real_na_and_nan_tickers_kept(self):
+        text = GOOD.replace("Y|ZZZZ|Test|Q|Q|N|100|Y|N||ZZZZ|N\n", "Y|NA|Nano Labs|Q|Q|N|100|N|N||NA|N\nY|NAN|Nuveen NY|N| |N|100|N|N|NAN||N\n")
+        with mock.patch.object(scan.requests, "get", return_value=R(text)):
+            got = sorted(scan.get_nasdaq_list())
+        self.assertEqual(got, ["AAPL", "NA", "NAN"])
+        self.assertNotIn("nan", got)

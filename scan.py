@@ -65,7 +65,7 @@ def get_nasdaq_list() -> list[str]:
         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
         response.raise_for_status()
         validate_nasdaq_payload(response.text)
-        df = pd.read_csv(io.StringIO(response.text), sep="|")
+        df = pd.read_csv(io.StringIO(response.text), sep="|", dtype=str, keep_default_na=False, na_values=[])  # keep real tickers NA/NAN
         df = df[df["Test Issue"] == "N"]
         df = df[df["ETF"] == "N"]
         df = df.dropna(subset=["Symbol"])
