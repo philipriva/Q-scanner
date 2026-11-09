@@ -30,36 +30,14 @@ jobs:
           set +e
           python scan.py
           set -e
-      - name: Publish list + sidecar metadata
+      - name: Publish list (main) + sidecar (scan-meta branch)
         id: publish
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          set -euo pipefail
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          echo "pushed=false" >> "$GITHUB_OUTPUT"
-          echo "file=" >> "$GITHUB_OUTPUT"
-          echo "meta=" >> "$GITHUB_OUTPUT"
-          if ls Maggiestocks_*.txt 1> /dev/null 2>&1; then
-            git add Maggiestocks_*.txt Maggiestocks_*.txt.meta.json || true
-            if git diff --staged --quiet; then
-              LATEST=$(ls -1 Maggiestocks_*.txt | sort | tail -1)
-              echo "file=$LATEST" >> "$GITHUB_OUTPUT"
-              META="${LATEST}.meta.json"
-              if [ -f "$META" ]; then echo "meta=$META" >> "$GITHUB_OUTPUT"; fi
-              echo "Maggiestocks already committed; nothing new to push."
-            else
-              git commit -m "更新今日 Maggiestocks 清單 + session metadata"
-              git push
-              LATEST=$(ls -1 Maggiestocks_*.txt | sort | tail -1)
-              echo "file=$LATEST" >> "$GITHUB_OUTPUT"
-              META="${LATEST}.meta.json"
-              if [ -f "$META" ]; then echo "meta=$META" >> "$GITHUB_OUTPUT"; fi
-              echo "pushed=true" >> "$GITHUB_OUTPUT"
-              echo "Published $LATEST (+ meta if present)"
-            fi
-          else
-            echo "No Maggiestocks txt produced."
-          fi
+          bash publish_scan.sh "Maggiestocks_" "更新今日 Maggiestocks 清單"
       - name: Upload verify artifacts
         if: always()
         uses: actions/upload-artifact@v4

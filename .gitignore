@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 out_test_*.txt
 out_test_*.txt.meta.json
+
+# sidecars are published to the scan-meta branch, not main
+*.txt.meta.json
