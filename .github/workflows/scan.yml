@@ -2,37 +2,57 @@ name: Qullamaggie Daily Scanner
 
 on:
   schedule:
-    # 台灣/香港時間每天早上 07:30 自動執行
+    # Daily (keep * * *). 30 23 * * * ≈ 08:30 JST every day.
     - cron: '30 23 * * *'
+    # Backups (Philip t337u), odd minutes, finish before 11:00 JST (~8–10 min):
+    # 09:17 JST; 10:07 JST. Skip if a success already exists for the latest US session.
+    - cron: '17 0 * * *'
+    - cron: '7 1 * * *'
   workflow_dispatch: # 允許手動點擊執行
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+concurrency:
+  group: qullamaggie-daily-scanner
+  cancel-in-progress: false
 
 jobs:
   run-scanner:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
 
     steps:
     - name: 檢查程式碼
       uses: actions/checkout@v4
 
+    - name: Skip if session already succeeded
+      id: already
+      if: github.event_name == 'schedule'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: python3 skip_if_session_done.py --workflow scan.yml
+
     - name: 設定 Python 環境
+      if: steps.already.outputs.skip != 'true'
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
     - name: 安裝必要套件
+      if: steps.already.outputs.skip != 'true'
       run: |
         pip install -r requirements.txt
 
     - name: 執行 Qullamaggie 強勢股篩選
+      if: steps.already.outputs.skip != 'true'
       run: |
         python scan.py
 
     - name: 自動將結果存回 GitHub 專案
+      if: steps.already.outputs.skip != 'true'
       id: publish
       run: |
         git config --local user.email "action@github.com"
@@ -65,7 +85,7 @@ jobs:
     # Requires Actions secret EXTRASCAN_DISPATCH_TOKEN (same fine-grained PAT as
     # my-stock-scanner: ExtraScan Contents Read and write for repository_dispatch).
     - name: Trigger ExtraScan QQscan
-      if: steps.publish.outputs.pushed == 'true'
+      if: steps.already.outputs.skip != 'true' && steps.publish.outputs.pushed == 'true'
       env:
         EXTRASCAN_DISPATCH_TOKEN: ${{ secrets.EXTRASCAN_DISPATCH_TOKEN }}
         MAGGIE_FILE: ${{ steps.publish.outputs.file }}
