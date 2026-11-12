@@ -8,6 +8,8 @@ on:
     # 09:17 JST; 10:07 JST. Skip if a success already exists for the latest US session.
     - cron: '17 0 * * *'
     - cron: '7 1 * * *'
+    # Late backup 15:00 JST Tue–Sat (Yahoo last-bar often incomplete earlier).
+    - cron: "0 6 * * 2-6"
   workflow_dispatch: # 允許手動點擊執行
 
 env:
