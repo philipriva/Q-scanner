@@ -2,14 +2,14 @@ name: Qullamaggie Daily Scanner
 
 on:
   schedule:
-    # Daily (keep * * *). 30 23 * * * ≈ 08:30 JST every day.
-    - cron: '30 23 * * *'
-    # Backups (Philip t337u), odd minutes, finish before 11:00 JST (~8–10 min):
-    # 09:17 JST; 10:07 JST. Skip if a success already exists for the latest US session.
-    - cron: '17 0 * * *'
-    - cron: '7 1 * * *'
-    # Late backup 15:00 JST Tue–Sat (Yahoo last-bar often incomplete earlier).
-    - cron: "0 6 * * 2-6"
+    # Daily (keep * * *). 33 1 * * * ≈ 10:33 JST every day, after Strong 09:53.
+    - cron: '33 1 * * *'
+    # Mid backups, offset from other full-universe Yahoo writers:
+    # 14:18 JST; 17:38 JST. Skip if a success already exists for the latest US session.
+    - cron: '18 5 * * *'
+    - cron: '38 8 * * *'
+    # Late backup 19:02 JST Tue–Sat (staggered 15:00 Yahoo ladder).
+    - cron: "2 10 * * 2-6"
   workflow_dispatch: # 允許手動點擊執行
 
 env:
