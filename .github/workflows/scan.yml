@@ -2,8 +2,10 @@ name: Qullamaggie Daily Scanner
 
 on:
   schedule:
-    # 台灣/香港時間每天早上 07:30 自動執行
-    - cron: '30 23 * * *'
+    # Midday backup only (Philip 2026-11-17 / 指原). Primary trigger is
+    # the 07:30 JST routine via workflow_dispatch. This cron is
+    # 14:41 JST daily (`41 5 * * *` UTC), odd minute, not :00/:30.
+    - cron: '41 5 * * *'
   workflow_dispatch: # 允許手動點擊執行
 
 env:
