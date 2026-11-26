@@ -2,6 +2,8 @@ name: Qullamaggie Daily Scanner
 
 on:
   schedule:
+    # Morning trigger (2026-11-26 Philip decoupling): 09:39 JST Tue–Sat.
+    - cron: '39 0 * * 2-6'
     # Midday backup only (Philip 2026-11-17 / 指原). Primary trigger is
     # the 07:30 JST routine via workflow_dispatch. This cron is
     # 14:41 JST daily (`41 5 * * *` UTC), odd minute, not :00/:30.
